@@ -1,0 +1,13 @@
+### VIF model is one of the methods to solve the multicollinearity issue in the logistic regression model ###
+vif(model_all)
+
+vif_values <- vif(model_all)           #create vector of VIF values
+
+barplot(vif_values, main = "VIF Values", horiz = TRUE, col = "steelblue") #create horizontal bar chart to display each VIF value
+
+abline(v = 5, lwd = 3, lty = 2)    #add vertical line at 5 as after 5 there is severe correlation
+
+
+
+### The Farrar-Glauber test (F-G test) for multicollinearity is one of the methonds to deal with the problem of multicollinearity ###
+library(mctest)
