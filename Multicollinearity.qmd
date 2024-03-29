@@ -1,0 +1,130 @@
+---
+title: "Bankruptcy prediction"
+author: "Ruixuan"
+format: html
+editor: visual
+---
+
+1.  **Import dataset**
+
+    ```{r}
+    library(openxlsx)
+    df <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
+    rowdata <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
+    ```
+
+2.  **Descriptive statistics**
+
+    ```{r}
+    dim(rowdata)
+    is.matrix(rowdata)
+    is.data.frame(rowdata)
+    table(is.na(rowdata))
+
+    summary(rowdata)
+    ```
+
+3.  **Multicollinearity test**
+
+    ```{r}
+    colnames(df)[1] <- 'y1'
+    for (i in 2:96) {
+      colnames(df)[i] <- paste0('x', i - 1)
+    }
+
+
+    ### Correlation matrix between y1 and x1-x95 ###
+    correlation_with_y <- numeric(95)
+    for (i in 1:95) {
+      correlation_with_y[i] <- cor(df$y1, df[[paste0('x', i)]])
+    }
+
+    print(correlation_with_y)
+
+    ### Correlation matrix between independent variables (x1-x95) ###
+    correlation_matrix <- cor(df[, -1])
+
+    print(correlation_matrix)
+
+    ### Find highly correlated variables ###
+    threshold <- 0.9
+    similar_variables <- which(abs(correlation_matrix) > threshold & correlation_matrix != 1, arr.ind = TRUE)
+
+    print(similar_variables)
+
+    highly_correlated_pairs <- data.frame(row = similar_variables[, 'row'],
+                                          col = similar_variables[, 'col'])
+
+    print(highly_correlated_pairs)
+
+    for (i in 1:nrow(highly_correlated_pairs)) {
+      row_index <- highly_correlated_pairs[i, 'row']
+      col_index <- highly_correlated_pairs[i, 'col']
+      
+      df <- df[, -col_index]
+    }
+
+    print(df)
+
+    processed_df <- read.csv("D:/University of Birmingham/Big data management/Group assignment/processed_data.csv")
+
+    processed_df <- processed_df[, !names(processed_df) %in% c('x77', 'x78', 'x94') ]
+
+    lmdf <- lm(y1~ ., data = processed_df)
+    print(lmdf)
+
+    library(car)
+    vif_value <- vif(lmdf)
+
+    print(vif_value)
+
+    ### Sort the variables with higher than 10 vif value ###
+    variable_to_remove <- names(vif_value)[vif_value > 10]
+
+    ### Remove the these variables 
+    processed_df <- processed_df[, !names(processed_df) %in% variable_to_remove]
+
+    processed_lmdf <- lm(y1~ ., data = processed_df)
+    print(processed_lmdf)
+
+    par(mfrow=c(2, 2))
+    plot(processed_lmdf)
+
+    ### Farrar-Glauber Test ###
+    omcdiag_result <- omcdiag(processed_lmdf)
+
+    imcdiag_result <- imcdiag(processed_lmdf)
+
+    print(omcdiag_result)
+    print(imcdiag_result)
+    ```
+
+4.  **Solve multicollinearity issue**
+
+    ```{r}
+    library(glmnet)
+
+    x_df <- processed_df[, grep('^x\\d+$', names(processed_df))]
+    x <- as.matrix(x_df)
+    y <- processed_df$y1
+
+    ### Using corss-validation to choose regularzation factor ###
+    cvfit <- cv.glmnet(x, y, alpha = 1)
+
+    ### plot the result of cross-validation
+    plot(cvfit)
+
+    ### finding the minimum lambda ###
+    best_lambda <- cvfit$lambda.min
+
+    ### Using minimum lambda to do lasso regression
+    lasso_model <- glmnet(x, y, alpha = 1, lambda = best_lambda)
+
+    coef(lasso_model)
+    ```
+
+5.  Export the processed_df file as csv
+
+    ```{r}
+    write.csv(processed_df, 'D:/University of Birmingham/Big data management/Group assignment/processed_df.csv', row.names = FALSE)
+    ```
