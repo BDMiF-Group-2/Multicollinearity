@@ -13,4 +13,4 @@ Methodology
 Dataset 
 --
 - The processed_train_final.csv is the dataset after did VIF test as well as autocorrelation test, the number of features is 40;
-- The processed_train_final_v2_with_19_variables is the dataset after did VIF test, autocorrelation test and Farrar-Glauber test, the number of features is 19.
+- The processed_train_final_v2_with_18_variables is the dataset after did VIF test, autocorrelation test and Farrar-Glauber test, the number of features is 18.
