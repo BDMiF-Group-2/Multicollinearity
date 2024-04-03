@@ -1,3 +1,4 @@
+Multicollinearity Test
 - First in first, I did the autocorrelation analysis for the 95 raw variables and find out the highly correlation issue among them. Around 41 variables were dropped after test;
 - After that, the new processed dataset can move on to the next tests. the autocorrelation issue is solved, the next challenge is the problem of multicollinearity. If a model has the problem of multicollinearity,
   it means that the bias of the model causes a lot of trouble for the accuracy of the model. So that, VIF and Farrar-Glauber Test provides a detection method for the problem. 
