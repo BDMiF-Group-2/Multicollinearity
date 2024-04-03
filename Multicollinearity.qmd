@@ -10,6 +10,7 @@ editor: visual
     ```{r}
     library(openxlsx)
     df <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
+    train <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/train.xlsx")
     rowdata <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
     ```
 
@@ -22,16 +23,17 @@ editor: visual
     table(is.na(rowdata))
 
     summary(rowdata)
+    summary(train)
     ```
 
 3.  **Multicollinearity test**
 
     ```{r}
+    ### Rename rawdata variables ###
     colnames(df)[1] <- 'y1'
     for (i in 2:96) {
       colnames(df)[i] <- paste0('x', i - 1)
     }
-
 
     ### Correlation matrix between y1 and x1-x95 ###
     correlation_with_y <- numeric(95)
@@ -91,12 +93,93 @@ editor: visual
     plot(processed_lmdf)
 
     ### Farrar-Glauber Test ###
+    library(mctest)
     omcdiag_result <- omcdiag(processed_lmdf)
 
     imcdiag_result <- imcdiag(processed_lmdf)
 
     print(omcdiag_result)
     print(imcdiag_result)
+
+
+    -------------------------------------------------------------------------
+    ### Rename trainset data variables ###
+    colnames(train)[1] <- 'y1'
+    for (i in 2:95) {
+      colnames(train)[i] <- paste0('x', i - 1)
+    }
+
+    ### Correlation matrix between y1 and x1-x94 ###
+    train_correlation_with_y <- numeric(94)
+    for (i in 1:94) {
+      train_correlation_with_y[i] <- cor(train$y1, train[[paste0('x', i)]])
+    }
+
+    print(train_correlation_with_y)
+
+    ### Correlation matrix between independent variables (x1-x94) ###
+    train_correlation_matrix <- cor(train[, -1])
+
+    print(train_correlation_matrix)
+
+    ### Find highly correlated variables ###
+    threshold <- 0.9
+    train_similar_variables <- which(abs(train_correlation_matrix) > threshold & train_correlation_matrix != 1, arr.ind = TRUE)
+
+    print(train_similar_variables)
+
+    train_highly_correlated_pairs <- data.frame(row = similar_variables[, 'row'],
+                                          col = similar_variables[, 'col'])
+
+    print(train_highly_correlated_pairs)
+
+    for (i in 1:nrow(train_highly_correlated_pairs)) {
+      row_index <- train_highly_correlated_pairs[i, 'row']
+      col_index <- train_highly_correlated_pairs[i, 'col']
+      
+      train <- train[, -col_index]
+    }
+
+    print(train)
+
+    write.csv(train, 'D:/University of Birmingham/Big data management/Group assignment/processed_train.csv', row.names = FALSE)
+
+    processed_train <- read.csv("D:/University of Birmingham/Big data management/Group assignment/processed_train.csv")
+
+    train_lmdf <- lm(y1~ ., data = processed_train)
+    print(train_lmdf)
+
+    processed_train <- processed_train[, !names(processed_train) %in% c('x77', 'x78')]
+
+    train_lmdf <- lm(y1~ ., data = processed_train)
+    print(train_lmdf)
+
+    library(car)
+    train_vif_value <- vif(train_lmdf)
+
+    print(train_vif_value)
+
+    ### Sort the variables with higher than 10 vif value ###
+    train_variable_to_remove <- names(train_vif_value)[train_vif_value > 10]
+
+    ### Remove the these variables 
+    processed_train <- processed_train[, !names(processed_train) %in% train_variable_to_remove]
+
+    train_processed_lmdf <- lm(y1~ ., data = processed_train)
+    print(train_processed_lmdf)
+
+    par(mfrow=c(2, 2))
+    plot(train_processed_lmdf)
+
+    ### Farrar-Glauber Test ###
+    library(mctest)
+    train_omcdiag_result <- omcdiag(processed_lmdf)
+
+    train_imcdiag_result <- imcdiag(processed_lmdf)
+
+    print(train_omcdiag_result)
+    print(train_imcdiag_result)
+
     ```
 
 4.  **Solve multicollinearity issue**
@@ -123,7 +206,7 @@ editor: visual
     coef(lasso_model)
     ```
 
-5.  Export the processed_df file as csv
+5.  **Export the processed_df file as csv**
 
     ```{r}
     write.csv(processed_df, 'D:/University of Birmingham/Big data management/Group assignment/processed_df.csv', row.names = FALSE)
