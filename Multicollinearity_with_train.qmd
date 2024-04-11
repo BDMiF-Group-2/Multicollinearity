@@ -1,0 +1,114 @@
+---
+title: "Bankruptcy prediction"
+author: "Ruixuan"
+format: html
+editor: visual
+---
+
+1.  **Import dataset**
+
+    ```{r}
+    library(openxlsx)
+    df <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
+    train <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/train.xlsx")
+    rowdata <- read.xlsx("D:/University of Birmingham/Big data management/Group assignment/Group 2.xlsx")
+    ```
+
+2.  **Descriptive statistics**
+
+    ```{r}
+    dim(rowdata)
+    is.matrix(rowdata)
+    is.data.frame(rowdata)
+    table(is.na(rowdata))
+
+    summary(rowdata)
+    summary(train)
+    ```
+
+3.  **Training set multicollinearity test**
+
+    ```{r}
+    ### Rename trainset data variables ###
+    colnames(train)[1] <- 'y1'
+    for (i in 2:77) {
+      colnames(train)[i] <- paste0('x', i - 1)
+    }
+
+    ### Correlation matrix between y1 and x1-x76 ###
+    train_correlation_with_y <- numeric(77)
+    for (i in 1:76) {
+      train_correlation_with_y[i] <- cor(train$y1, train[[paste0('x', i)]])
+    }
+
+    print(train_correlation_with_y)
+
+    train_lm <- glm(y1~ ., data = train)
+
+    alias(train_lm)
+
+    library(car)
+    train_vif_value <- vif(train_lm)
+
+    print(train_vif_value)
+
+
+
+    ### Sort the variables with higher than 10 vif value ###
+    train_variable_to_remove <- names(train_vif_value)[train_vif_value > 10]
+
+    ### Remove the these variables 
+    train <- train[, !names(train) %in% train_variable_to_remove]
+
+    train_processed_lm <- glm(y1~ ., data = train)
+    print(train_processed_lm)
+
+
+
+    processed_train_vif_value <- vif(train_processed_lm)
+
+    ### Sort the variables again with higher than 10 vif value
+    train_variable_to_remove2 <- names(processed_train_vif_value)[processed_train_vif_value > 10]
+
+    ### Remove the these variables 
+    train <- train[, !names(train) %in% train_variable_to_remove2]
+
+    train_processed_lm <- glm(y1~ ., data = train)
+
+    processed_train_vif_value <- vif(train_processed_lm)
+
+
+    ### Generate new logistic regression model
+    train_processed_lm <- glm(y1~ ., data = train)
+
+    par(mfrow=c(2, 2))
+
+    plot(train_processed_lm)
+
+    vif_table <- data.frame(variable = names(processed_train_vif_value), vif = processed_train_vif_value)
+
+    library(ggplot2)
+    p <- ggplot(vif_table, aes(x = variable, y = vif)) +
+      geom_point() +
+      geom_hline(yintercept = 10, linetype = "dashed", color = "red") +  # 添加 VIF 阈值线
+      xlab("Variable") +
+      ylab("VIF") +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+    ggsave('D:/University of Birmingham/Big data management/Group assignment/plot_vif.png', plot = p, width = 6, height = 4, units = "in")
+
+    ### Farrar-Glauber Test ###
+    library(mctest)
+    train_omcdiag_result <- omcdiag(train_processed_lm)
+
+    train_imcdiag_result <- imcdiag(train_processed_lm)
+
+    print(train_omcdiag_result)
+    print(train_imcdiag_result)
+    ```
+
+4.  **Export the processed_df file as csv**
+
+    ```{r}
+    write.csv(train, 'D:/University of Birmingham/Big data management/Group assignment/processed_train.csv', row.names = FALSE)
+    ```
