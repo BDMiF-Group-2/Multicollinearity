@@ -35,15 +35,7 @@ editor: visual
       colnames(train)[i] <- paste0('x', i - 1)
     }
 
-    ### Correlation matrix between y1 and x1-x76 ###
-    train_correlation_with_y <- numeric(77)
-    for (i in 1:76) {
-      train_correlation_with_y[i] <- cor(train$y1, train[[paste0('x', i)]])
-    }
-
-    print(train_correlation_with_y)
-
-    train_lm <- glm(y1~ ., data = train)
+    train_lm <- glm(Bankrupt~ ., data = train)
 
     alias(train_lm)
 
@@ -60,9 +52,8 @@ editor: visual
     ### Remove the these variables 
     train <- train[, !names(train) %in% train_variable_to_remove]
 
-    train_processed_lm <- glm(y1~ ., data = train)
+    train_processed_lm <- glm(Bankrupt~ ., data = train)
     print(train_processed_lm)
-
 
 
     processed_train_vif_value <- vif(train_processed_lm)
@@ -73,13 +64,20 @@ editor: visual
     ### Remove the these variables 
     train <- train[, !names(train) %in% train_variable_to_remove2]
 
-    train_processed_lm <- glm(y1~ ., data = train)
+    train_processed_lm <- glm(Bankrupt~ ., data = train)
 
     processed_train_vif_value <- vif(train_processed_lm)
 
+    ### Sort the variables again with higher than 10 vif value
+    train_variable_to_remove3 <- names(processed_train_vif_value)[processed_train_vif_value > 10]
+
+    ### Remove the these variables 
+    train <- train[, !names(train) %in% train_variable_to_remove3]
+
+    processed_train_vif_value <- vif(train_processed_lm)
 
     ### Generate new logistic regression model
-    train_processed_lm <- glm(y1~ ., data = train)
+    train_processed_lm <- glm(Bankrupt~ ., data = train)
 
     par(mfrow=c(2, 2))
 
@@ -110,5 +108,5 @@ editor: visual
 4.  **Export the processed_df file as csv**
 
     ```{r}
-    write.csv(train, 'D:/University of Birmingham/Big data management/Group assignment/processed_train.csv', row.names = FALSE)
+    write.csv(train, 'D:/University of Birmingham/Big data management/Group assignment/processed_train 2.csv', row.names = FALSE)
     ```
