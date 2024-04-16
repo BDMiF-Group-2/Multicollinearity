@@ -8,4 +8,5 @@ Methodology
 
 Dataset 
 --
-- The processed_train.csv is the dataset after did VIF test, the number of features is 51;
+- The train.csv is the dataset after did VIF test, the number of features is 51;
+- The varibales_to_remove.csv is the features are dropped from the training dataset;
